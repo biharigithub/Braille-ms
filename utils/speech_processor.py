@@ -1,20 +1,19 @@
-import pyttsx3
+from gtts import gTTS
 import tempfile
 import base64
 import os
 
-def text_to_speech(text):
+def text_to_speech(text, language='english'):
     try:
-        engine = pyttsx3.init()
-        engine.setProperty('rate', 150)  # You can adjust speed
-        engine.setProperty('volume', 1.0)
+        lang_code = 'en' if language.lower() == 'english' else 'hi'
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as f:
-            filename = f.name
-        engine.save_to_file(text, filename)
-        engine.runAndWait()
+        # Generate speech using gTTS
+        tts = gTTS(text=text, lang=lang_code)
 
-        # Read audio as base64
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            filename = tmp.name
+            tts.save(filename)
+
         with open(filename, "rb") as audio_file:
             audio_data = base64.b64encode(audio_file.read()).decode('utf-8')
 
