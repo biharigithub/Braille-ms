@@ -55,3 +55,31 @@ function showNotification(title, message) {
         console.log(`Notification: ${title} - ${message}`);
     }
 }
+// 👇 Add this at the end of main.js
+
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(utterance);
+    } else {
+        showNotification('Error', 'Speech synthesis not supported in this browser.');
+    }
+}
+
+// Optional: Automatically bind to "Read Aloud" button if present
+document.addEventListener('DOMContentLoaded', function () {
+    const readAloudBtn = document.getElementById('read-aloud-btn');
+    const inputBox = document.getElementById('text-input');
+
+    if (readAloudBtn && inputBox) {
+        readAloudBtn.addEventListener('click', function () {
+            const text = inputBox.value.trim();
+            if (text !== '') {
+                speakText(text);
+            } else {
+                showNotification('Error', 'Please enter some text to read aloud.');
+            }
+        });
+    }
+});
+
