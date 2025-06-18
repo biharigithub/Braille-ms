@@ -1,5 +1,3 @@
-// ✅ Updated Image to Braille Conversion JavaScript for Android WebView & Deployment Compatibility
-
 document.addEventListener('DOMContentLoaded', function () {
     const imageInput = document.getElementById('image-input');
     const imagePreview = document.getElementById('image-preview');
@@ -72,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Read Aloud using Flask API with language
+    // ✅ Read Aloud using WebView-compatible Speech API
     if (readAloudButton) {
         readAloudButton.addEventListener('click', function () {
             const text = extractedTextElement.textContent;
@@ -81,32 +79,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 showNotification('Error', 'No text to read');
                 return;
             }
-            readAloud(text, language);
+            const langCode = language === 'hindi' ? 'hi-IN' : 'en-US';
+            readAloud(text, langCode);
         });
     }
 
-    function readAloud(text, language) {
-        fetch('/api/text-to-speech', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: text, language: language }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showNotification('Error', data.error);
-                return;
-            }
-            const audio = new Audio('data:audio/mp3;base64,' + data.audio_data);
-            audio.play();
+    function readAloud(text, langCode) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = langCode;
+            speechSynthesis.speak(utterance);
             showNotification('Success', 'Reading text aloud');
-        })
-        .catch(error => {
-            console.error('Read Aloud Error:', error);
-            showNotification('Error', 'Failed to read text aloud');
-        });
+        } else {
+            showNotification('Error', 'Speech synthesis not supported');
+        }
     }
 
     function displayDetailedMapping(mapping) {
