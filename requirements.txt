@@ -1,0 +1,7 @@
+Flask
+pytesseract
+Pillow
+opencv-python
+gTTS
+SpeechRecognition
+flask-cors
