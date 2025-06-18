@@ -4,12 +4,13 @@ import tempfile
 from PIL import Image
 import os
 
-def extract_text_from_image(image_file):
+def extract_text_from_image(image_file, lang='eng'):
     """
     Extract text from an image using Tesseract OCR.
     
     Args:
         image_file: Flask file object containing the image
+        lang: Language code ('eng' for English, 'hin' for Hindi)
         
     Returns:
         str: Extracted text from the image
@@ -23,8 +24,8 @@ def extract_text_from_image(image_file):
         # Open the image with PIL
         image = Image.open(temp_filename)
         
-        # Use pytesseract to extract text from the image
-        extracted_text = pytesseract.image_to_string(image)
+        # Use pytesseract to extract text from the image with specified language
+        extracted_text = pytesseract.image_to_string(image, lang=lang)
         
         # Clean up the temporary file
         if os.path.exists(temp_filename):

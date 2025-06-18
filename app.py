@@ -29,13 +29,7 @@ def text_to_braille_page():
 def image_to_braille_page():
     return render_template('image_to_braille.html')
 
-@app.route('/braille-to-speech')
-def braille_to_speech_page():
-    return render_template('braille_to_speech.html')
 
-@app.route('/braille-image-to-text')
-def braille_image_to_text_page():
-    return render_template('braille_image_to_text.html')
 
 @app.route('/api/text-to-braille', methods=['POST'])
 def convert_text_to_braille():
@@ -85,41 +79,46 @@ def process_image():
     if image_file.filename == '':
         return jsonify({'error': 'No image selected'}), 400
     
+    language = request.form.get('language', 'english')
+    
     try:
-        extracted_text = extract_text_from_image(image_file)
+        # Extract text from image based on language
+        if language == 'hindi':
+            extracted_text = extract_text_from_image(image_file, lang='hin')
+        else:
+            extracted_text = extract_text_from_image(image_file, lang='eng')
+        
         if not extracted_text:
             return jsonify({'error': 'No text detected in the image'}), 400
         
+        # Convert to Braille
         braille = text_to_braille(extracted_text)
+        
+        # Create detailed mapping
+        detailed_mapping = []
+        for i, char in enumerate(extracted_text):
+            if char == ' ':
+                detailed_mapping.append({
+                    'original': 'space',
+                    'braille': '⠀'  # Braille space
+                })
+            else:
+                detailed_mapping.append({
+                    'original': char,
+                    'braille': braille[i] if i < len(braille) else '⠿'  # Default in case of mismatch
+                })
+        
         return jsonify({
             'text': extracted_text,
-            'braille': braille
+            'braille': braille,
+            'detailed_mapping': detailed_mapping,
+            'language': language
         })
     except Exception as e:
         logging.error(f"Error processing image: {str(e)}")
         return jsonify({'error': f'Error processing image: {str(e)}'}), 500
 
-@app.route('/api/braille-image-to-text', methods=['POST'])
-def process_braille_image():
-    if 'braille_image' not in request.files:
-        return jsonify({'error': 'No image provided'}), 400
-    
-    braille_image_file = request.files['braille_image']
-    if braille_image_file.filename == '':
-        return jsonify({'error': 'No image selected'}), 400
-    
-    try:
-        detected_text, processed_image_base64 = detect_braille_from_image(braille_image_file)
-        if not detected_text:
-            return jsonify({'error': 'No Braille patterns detected in the image'}), 400
-        
-        return jsonify({
-            'text': detected_text,
-            'processed_image': processed_image_base64
-        })
-    except Exception as e:
-        logging.error(f"Error processing Braille image: {str(e)}")
-        return jsonify({'error': f'Error processing Braille image: {str(e)}'}), 500
+
 
 @app.route('/api/text-to-speech', methods=['POST'])
 def convert_text_to_speech():
