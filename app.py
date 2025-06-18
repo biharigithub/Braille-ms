@@ -5,6 +5,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Import utility functions
 from utils.braille_converter import text_to_braille, braille_to_text
+from utils.hindi_braille_converter import hindi_text_to_braille, get_detailed_hindi_braille_mapping
 from utils.image_processor import extract_text_from_image
 from utils.speech_processor import text_to_speech
 from utils.braille_image_processor import detect_braille_from_image
@@ -91,22 +92,25 @@ def process_image():
         if not extracted_text:
             return jsonify({'error': 'No text detected in the image'}), 400
         
-        # Convert to Braille
-        braille = text_to_braille(extracted_text)
-        
-        # Create detailed mapping
-        detailed_mapping = []
-        for i, char in enumerate(extracted_text):
-            if char == ' ':
-                detailed_mapping.append({
-                    'original': 'space',
-                    'braille': '⠀'  # Braille space
-                })
-            else:
-                detailed_mapping.append({
-                    'original': char,
-                    'braille': braille[i] if i < len(braille) else '⠿'  # Default in case of mismatch
-                })
+        # Convert to Braille based on language
+        if language == 'hindi':
+            braille = hindi_text_to_braille(extracted_text)
+            detailed_mapping = get_detailed_hindi_braille_mapping(extracted_text)
+        else:
+            braille = text_to_braille(extracted_text)
+            # Create detailed mapping for English
+            detailed_mapping = []
+            for i, char in enumerate(extracted_text):
+                if char == ' ':
+                    detailed_mapping.append({
+                        'original': 'space',
+                        'braille': '⠀'  # Braille space
+                    })
+                else:
+                    detailed_mapping.append({
+                        'original': char,
+                        'braille': braille[i] if i < len(braille) else '⠿'  # Default in case of mismatch
+                    })
         
         return jsonify({
             'text': extracted_text,
