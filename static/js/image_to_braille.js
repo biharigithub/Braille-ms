@@ -1,5 +1,3 @@
-// ✅ Updated Image to Braille Conversion JavaScript for Android WebView & Deployment Compatibility
-
 document.addEventListener('DOMContentLoaded', function () {
     const imageInput = document.getElementById('image-input');
     const imagePreview = document.getElementById('image-preview');
@@ -12,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadingSpinner = document.getElementById('loading-spinner');
     const readAloudButton = document.getElementById('read-aloud-button');
 
-    // Image preview
+    // Show image preview
     imageInput.addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
@@ -27,27 +25,29 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Form submit for OCR
+    // Handle form submission for OCR and Braille conversion
     uploadForm.addEventListener('submit', function (e) {
         e.preventDefault();
+
         const file = imageInput.files[0];
         if (!file) {
-            showNotification('Error', 'Please select an image file');
+            showNotification('Error', 'Please select an image file.');
             return;
         }
 
-        loadingSpinner.classList.remove('d-none');
-        const language = languageSelect.value;
+        const language = languageSelect.value || 'english';
         const formData = new FormData();
         formData.append('image', file);
         formData.append('language', language);
+
+        loadingSpinner.classList.remove('d-none');
 
         fetch('/api/image-to-text', {
             method: 'POST',
             body: formData,
         })
             .then(response => {
-                if (!response.ok) throw new Error('Network error');
+                if (!response.ok) throw new Error('Server error');
                 return response.json();
             })
             .then(data => {
@@ -56,66 +56,62 @@ document.addEventListener('DOMContentLoaded', function () {
                     showNotification('Error', data.error);
                     return;
                 }
+
                 extractedTextElement.textContent = data.text;
                 brailleOutputElement.textContent = data.braille;
-                if (data.detailed_mapping) displayDetailedMapping(data.detailed_mapping);
-                if (readAloudButton) {
-                    readAloudButton.classList.remove('d-none');
-                    readAloudButton.setAttribute('data-lang', language);
-                }
-                showNotification('Success', 'Text extracted and converted to Braille');
+                displayDetailedMapping(data.detailed_mapping);
+
+                readAloudButton.classList.remove('d-none');
+                readAloudButton.setAttribute('data-lang', language);
+
+                showNotification('Success', 'Text extracted and converted to Braille.');
             })
-            .catch(error => {
+            .catch(err => {
                 loadingSpinner.classList.add('d-none');
-                console.error('Error:', error);
-                showNotification('Error', 'Image processing failed: ' + error.message);
+                console.error(err);
+                showNotification('Error', 'Failed to process image.');
             });
     });
 
-    // Read Aloud using Flask API with language
+    // Handle Read Aloud
     if (readAloudButton) {
         readAloudButton.addEventListener('click', function () {
-            const text = extractedTextElement.textContent;
+            const text = extractedTextElement.textContent.trim();
             const language = languageSelect.value || 'english';
-            if (!text || text.trim() === '') {
-                showNotification('Error', 'No text to read');
+
+            if (!text) {
+                showNotification('Error', 'No text available to read aloud.');
                 return;
             }
-            readAloud(text, language);
-        });
-    }
 
-    function readAloud(text, language) {
-        fetch('/api/text-to-speech', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: text, language: language }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    showNotification('Error', data.error);
-                    return;
-                }
-                const audio = new Audio('data:audio/mp3;base64,' + data.audio_data);
-                audio.play();
-                showNotification('Success', 'Reading text aloud');
+            fetch('/api/text-to-speech', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, language }),
             })
-            .catch(error => {
-                console.error('Read Aloud Error:', error);
-                showNotification('Error', 'Failed to read text aloud');
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showNotification('Error', data.error);
+                        return;
+                    }
+                    const audio = new Audio('data:audio/mp3;base64,' + data.audio_data);
+                    audio.play();
+                    showNotification('Success', 'Reading aloud...');
+                })
+                .catch(err => {
+                    console.error('TTS Error:', err);
+                    showNotification('Error', 'Failed to convert text to speech.');
+                });
+        });
     }
 
     function displayDetailedMapping(mapping) {
         detailedMapping.innerHTML = '';
-        if (!mapping || mapping.length === 0) return;
+        if (!Array.isArray(mapping)) return;
 
         const table = document.createElement('table');
         table.className = 'table table-dark table-bordered';
-
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
         headerRow.innerHTML = '<th>Character</th><th>Braille</th>';
@@ -125,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const tbody = document.createElement('tbody');
         mapping.forEach(item => {
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${item.original}</td><td style="font-size:24px;">${item.braille}</td>`;
+            row.innerHTML = `<td>${item.original}</td><td style="font-size: 24px;">${item.braille}</td>`;
             tbody.appendChild(row);
         });
         table.appendChild(tbody);
@@ -134,16 +130,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function showNotification(title, message) {
         const notification = document.getElementById('notification');
-        const notificationTitle = document.getElementById('notification-title');
-        const notificationMessage = document.getElementById('notification-message');
+        const titleElem = document.getElementById('notification-title');
+        const messageElem = document.getElementById('notification-message');
 
-        if (notification && notificationTitle && notificationMessage) {
-            notificationTitle.textContent = title;
-            notificationMessage.textContent = message;
-            notification.classList.add('show');
-            setTimeout(() => notification.classList.remove('show'), 3000);
-        } else {
-            console.log(`Notification: ${title} - ${message}`);
+        if (!notification || !titleElem || !messageElem) {
+            alert(`${title}: ${message}`);
+            return;
         }
+
+        titleElem.textContent = title;
+        messageElem.textContent = message;
+        notification.classList.add('show');
+        setTimeout(() => notification.classList.remove('show'), 4000);
     }
 });
