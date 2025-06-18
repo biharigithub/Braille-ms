@@ -5,4 +5,4 @@ numpy==1.23.5
 Pillow==9.5.0
 Werkzeug==2.2.3
 pytesseract==0.3.10
-pyttsx3
+gTTS==2.3.0
