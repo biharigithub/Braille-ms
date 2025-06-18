@@ -1,3 +1,5 @@
+// ✅ Updated Image to Braille Conversion JavaScript for Android WebView & Deployment Compatibility
+
 document.addEventListener('DOMContentLoaded', function () {
     const imageInput = document.getElementById('image-input');
     const imagePreview = document.getElementById('image-preview');
@@ -44,33 +46,33 @@ document.addEventListener('DOMContentLoaded', function () {
             method: 'POST',
             body: formData,
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Network error');
-            return response.json();
-        })
-        .then(data => {
-            loadingSpinner.classList.add('d-none');
-            if (data.error) {
-                showNotification('Error', data.error);
-                return;
-            }
-            extractedTextElement.textContent = data.text;
-            brailleOutputElement.textContent = data.braille;
-            if (data.detailed_mapping) displayDetailedMapping(data.detailed_mapping);
-            if (readAloudButton) {
-                readAloudButton.classList.remove('d-none');
-                readAloudButton.setAttribute('data-lang', language);
-            }
-            showNotification('Success', 'Text extracted and converted to Braille');
-        })
-        .catch(error => {
-            loadingSpinner.classList.add('d-none');
-            console.error('Error:', error);
-            showNotification('Error', 'Image processing failed: ' + error.message);
-        });
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.json();
+            })
+            .then(data => {
+                loadingSpinner.classList.add('d-none');
+                if (data.error) {
+                    showNotification('Error', data.error);
+                    return;
+                }
+                extractedTextElement.textContent = data.text;
+                brailleOutputElement.textContent = data.braille;
+                if (data.detailed_mapping) displayDetailedMapping(data.detailed_mapping);
+                if (readAloudButton) {
+                    readAloudButton.classList.remove('d-none');
+                    readAloudButton.setAttribute('data-lang', language);
+                }
+                showNotification('Success', 'Text extracted and converted to Braille');
+            })
+            .catch(error => {
+                loadingSpinner.classList.add('d-none');
+                console.error('Error:', error);
+                showNotification('Error', 'Image processing failed: ' + error.message);
+            });
     });
 
-    // ✅ Read Aloud using WebView-compatible Speech API
+    // Read Aloud using Flask API with language
     if (readAloudButton) {
         readAloudButton.addEventListener('click', function () {
             const text = extractedTextElement.textContent;
@@ -79,20 +81,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 showNotification('Error', 'No text to read');
                 return;
             }
-            const langCode = language === 'hindi' ? 'hi-IN' : 'en-US';
-            readAloud(text, langCode);
+            readAloud(text, language);
         });
     }
 
-    function readAloud(text, langCode) {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = langCode;
-            speechSynthesis.speak(utterance);
-            showNotification('Success', 'Reading text aloud');
-        } else {
-            showNotification('Error', 'Speech synthesis not supported');
-        }
+    function readAloud(text, language) {
+        fetch('/api/text-to-speech', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: text, language: language }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showNotification('Error', data.error);
+                    return;
+                }
+                const audio = new Audio('data:audio/mp3;base64,' + data.audio_data);
+                audio.play();
+                showNotification('Success', 'Reading text aloud');
+            })
+            .catch(error => {
+                console.error('Read Aloud Error:', error);
+                showNotification('Error', 'Failed to read text aloud');
+            });
     }
 
     function displayDetailedMapping(mapping) {
