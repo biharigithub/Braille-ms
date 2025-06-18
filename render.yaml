@@ -1,7 +1,6 @@
 services:
   - type: web
-    name: braille-app
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
-    pythonVersion: 3.10.13  # ✅ Add this line
+    name: braille-ms
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
