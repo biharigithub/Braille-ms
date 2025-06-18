@@ -59,7 +59,10 @@ document.addEventListener('DOMContentLoaded', function () {
             extractedTextElement.textContent = data.text;
             brailleOutputElement.textContent = data.braille;
             if (data.detailed_mapping) displayDetailedMapping(data.detailed_mapping);
-            if (readAloudButton) readAloudButton.classList.remove('d-none');
+            if (readAloudButton) {
+                readAloudButton.classList.remove('d-none');
+                readAloudButton.setAttribute('data-lang', language);
+            }
             showNotification('Success', 'Text extracted and converted to Braille');
         })
         .catch(error => {
@@ -69,27 +72,41 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Read Aloud using WebView-friendly speech synthesis
+    // Read Aloud using Flask API with language
     if (readAloudButton) {
         readAloudButton.addEventListener('click', function () {
             const text = extractedTextElement.textContent;
+            const language = languageSelect.value || 'english';
             if (!text || text.trim() === '') {
                 showNotification('Error', 'No text to read');
                 return;
             }
-            readAloud(text);
+            readAloud(text, language);
         });
     }
 
-    function readAloud(text) {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
-            speechSynthesis.speak(utterance);
+    function readAloud(text, language) {
+        fetch('/api/text-to-speech', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: text, language: language }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification('Error', data.error);
+                return;
+            }
+            const audio = new Audio('data:audio/mp3;base64,' + data.audio_data);
+            audio.play();
             showNotification('Success', 'Reading text aloud');
-        } else {
-            showNotification('Error', 'Speech synthesis not supported');
-        }
+        })
+        .catch(error => {
+            console.error('Read Aloud Error:', error);
+            showNotification('Error', 'Failed to read text aloud');
+        });
     }
 
     function displayDetailedMapping(mapping) {
