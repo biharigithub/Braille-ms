@@ -1,4 +1,4 @@
-# app.py (Final Fixed Version: Adds /api/text-to-braille)
+# ✅ UPDATED app.py (for Android WebView-compatible Read Aloud)
 
 import os
 import logging
@@ -71,7 +71,7 @@ def process_image():
         logging.error(f"Error processing image: {str(e)}")
         return jsonify({'error': f'Error processing image: {str(e)}'}), 500
 
-# ✅ NEWLY ADDED: Text to Braille API
+# ✅ Text to Braille API
 @app.route('/api/text-to-braille', methods=['POST'])
 def convert_text_to_braille():
     data = request.get_json()
@@ -102,7 +102,7 @@ def convert_text_to_braille():
         logging.error(f"Error converting text to braille: {str(e)}")
         return jsonify({'error': f'Error converting text to braille: {str(e)}'}), 500
 
-# ✅ Text to Speech (Read Aloud)
+# ✅ FIXED: Text to Speech that works in Android WebView
 @app.route('/api/text-to-speech', methods=['POST'])
 def convert_text_to_speech():
     data = request.get_json()
@@ -113,8 +113,8 @@ def convert_text_to_speech():
         return jsonify({'error': 'No text provided'}), 400
 
     try:
-        audio_data = text_to_speech(text, language)
-        return jsonify({'audio_data': audio_data})
+        audio_url = text_to_speech(text, language)
+        return jsonify({'audio_url': audio_url})
     except Exception as e:
         logging.error(f"Error converting text to speech: {str(e)}")
         return jsonify({'error': f'Error converting text to speech: {str(e)}'}), 500
