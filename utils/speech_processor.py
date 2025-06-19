@@ -1,29 +1,33 @@
-# ✅ Updated utils/speech_processor.py using edge-tts for better Android compatibility
-import asyncio
-import base64
+# utils/speech_processor.py (New)
+import pyttsx3
 import tempfile
+import base64
 import os
-from edge_tts import Communicate
 
 def text_to_speech(text, language='english'):
     try:
-        voice_map = {
-            'english': 'en-US-GuyNeural',
-            'hindi': 'hi-IN-MadhurNeural'
-        }
-        voice = voice_map.get(language.lower(), 'en-US-GuyNeural')
+        engine = pyttsx3.init()
+        voices = engine.getProperty('voices')
+        # Set voice for Hindi or English
+        for voice in voices:
+            if language == 'hindi' and ('hi' in voice.id or 'Hindi' in voice.name):
+                engine.setProperty('voice', voice.id)
+                break
+            elif language == 'english' and ('en' in voice.id or 'English' in voice.name):
+                engine.setProperty('voice', voice.id)
+                break
 
-        async def generate():
-            communicate = Communicate(text, voice)
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-                tmp_path = tmp_file.name
-            await communicate.save(tmp_path)
-            with open(tmp_path, 'rb') as f:
-                audio_base64 = base64.b64encode(f.read()).decode('utf-8')
-            os.remove(tmp_path)
-            return audio_base64
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp:
+            filename = tmp.name
+        engine.save_to_file(text, filename)
+        engine.runAndWait()
 
-        return asyncio.run(generate())
+        with open(filename, 'rb') as f:
+            audio_data = base64.b64encode(f.read()).decode('utf-8')
 
+        os.remove(filename)
+        return audio_data
     except Exception as e:
-        raise RuntimeError(f"TTS failed: {e}")
+        if 'filename' in locals() and os.path.exists(filename):
+            os.remove(filename)
+        raise e
