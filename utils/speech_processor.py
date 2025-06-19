@@ -1,19 +1,32 @@
-import os
-from gtts import gTTS
-from datetime import datetime
+# utils/speech_processor.py
 
-AUDIO_FOLDER = 'static/audio'
-os.makedirs(AUDIO_FOLDER, exist_ok=True)
+import pyttsx3
+import os
+import uuid
+
+AUDIO_DIR = os.path.join("static", "audio")
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
 def text_to_speech(text, language='english'):
-    try:
-        lang_code = 'hi' if language.lower() == 'hindi' else 'en'
-        filename = f'tts_{datetime.now().strftime("%Y%m%d%H%M%S%f")}.mp3'
-        filepath = os.path.join(AUDIO_FOLDER, filename)
+    engine = pyttsx3.init()
 
-        tts = gTTS(text=text, lang=lang_code)
-        tts.save(filepath)
+    # Set language voice
+    voices = engine.getProperty('voices')
+    if language == 'hindi':
+        # Try to set Hindi voice (you must install Hindi voice in OS)
+        for voice in voices:
+            if 'hi' in voice.languages or 'Hindi' in voice.name:
+                engine.setProperty('voice', voice.id)
+                break
+    else:
+        # Use default English voice
+        engine.setProperty('voice', voices[0].id)
 
-        return f'/static/audio/{filename}'
-    except Exception as e:
-        raise RuntimeError(f"TTS generation failed: {str(e)}")
+    # Generate unique filename
+    filename = f"tts_{uuid.uuid4().hex}.mp3"
+    filepath = os.path.join(AUDIO_DIR, filename)
+
+    engine.save_to_file(text, filepath)
+    engine.runAndWait()
+
+    return f"/static/audio/{filename}"
