@@ -1,24 +1,29 @@
-from gtts import gTTS
-import tempfile
+# ✅ Updated utils/speech_processor.py using edge-tts for better Android compatibility
+import asyncio
 import base64
+import tempfile
 import os
+from edge_tts import Communicate
 
 def text_to_speech(text, language='english'):
     try:
-        lang_code = 'en' if language.lower() == 'english' else 'hi'
+        voice_map = {
+            'english': 'en-US-GuyNeural',
+            'hindi': 'hi-IN-MadhurNeural'
+        }
+        voice = voice_map.get(language.lower(), 'en-US-GuyNeural')
 
-        tts = gTTS(text=text, lang=lang_code)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            filename = tmp.name
-            tts.save(filename)
+        async def generate():
+            communicate = Communicate(text, voice)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+                tmp_path = tmp_file.name
+            await communicate.save(tmp_path)
+            with open(tmp_path, 'rb') as f:
+                audio_base64 = base64.b64encode(f.read()).decode('utf-8')
+            os.remove(tmp_path)
+            return audio_base64
 
-        with open(filename, "rb") as audio_file:
-            audio_data = base64.b64encode(audio_file.read()).decode('utf-8')
-
-        os.remove(filename)
-        return audio_data
+        return asyncio.run(generate())
 
     except Exception as e:
-        if 'filename' in locals() and os.path.exists(filename):
-            os.remove(filename)
-        raise e
+        raise RuntimeError(f"TTS failed: {e}")
