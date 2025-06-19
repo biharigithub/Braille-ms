@@ -1,30 +1,31 @@
-import pyttsx3
-import uuid
+# utils/speech_processor.py
+
 import os
+import uuid
+import asyncio
+from edge_tts import Communicate
+
+AUDIO_DIR = "static/audio"
+
+def ensure_audio_dir():
+    if not os.path.exists(AUDIO_DIR):
+        os.makedirs(AUDIO_DIR)
+
+def get_voice(language):
+    return {
+        'hindi': 'hi-IN-SwaraNeural',
+        'english': 'en-US-AriaNeural'
+    }.get(language, 'en-US-AriaNeural')
 
 def text_to_speech(text, language='english'):
-    try:
-        # Use a temporary unique filename
-        filename = f"speech_{uuid.uuid4().hex}.mp3"
-        filepath = os.path.join("static/audio", filename)
+    ensure_audio_dir()
+    filename = f"{uuid.uuid4()}.mp3"
+    filepath = os.path.join(AUDIO_DIR, filename)
+    voice = get_voice(language)
 
-        # Initialize pyttsx3 engine
-        engine = pyttsx3.init()
+    async def generate():
+        communicate = Communicate(text=text, voice=voice)
+        await communicate.save(filepath)
 
-        # Set language voice (adjust based on system availability)
-        voices = engine.getProperty('voices')
-        for voice in voices:
-            if language == 'hindi' and 'hi' in voice.languages[0].decode():
-                engine.setProperty('voice', voice.id)
-                break
-            elif language == 'english' and ('en' in voice.languages[0].decode() or 'en' in voice.name.lower()):
-                engine.setProperty('voice', voice.id)
-                break
-
-        # Save audio to file
-        engine.save_to_file(text, filepath)
-        engine.runAndWait()
-
-        return f"/static/audio/{filename}"
-    except Exception as e:
-        raise Exception(f"pyttsx3 TTS failed: {str(e)}")
+    asyncio.run(generate())
+    return f"/static/audio/{filename}"
