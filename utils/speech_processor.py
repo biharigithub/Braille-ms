@@ -4,8 +4,6 @@ import os
 import uuid
 
 AUDIO_FOLDER = 'static/audio'
-
-# Ensure audio folder exists
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
 def text_to_speech(text, language):
@@ -18,7 +16,6 @@ def text_to_speech(text, language):
 
         tts.save(filepath)
 
-        # Return the URL path for frontend use
         return f"/static/audio/{filename}"
     except Exception as e:
         raise Exception(f"TTS failed: {str(e)}")
