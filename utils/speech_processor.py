@@ -5,27 +5,33 @@ import uuid
 import asyncio
 from edge_tts import Communicate
 
+# Directory to save audio files
 AUDIO_DIR = "static/audio"
+os.makedirs(AUDIO_DIR, exist_ok=True)
 
-def ensure_audio_dir():
-    if not os.path.exists(AUDIO_DIR):
-        os.makedirs(AUDIO_DIR)
+# Map language to voice
+VOICE_MAP = {
+    "english": "en-US-JennyNeural",
+    "hindi": "hi-IN-SwaraNeural"
+}
 
-def get_voice(language):
-    return {
-        'hindi': 'hi-IN-SwaraNeural',
-        'english': 'en-US-AriaNeural'
-    }.get(language, 'en-US-AriaNeural')
+async def generate_audio(text, voice, filename):
+    communicate = Communicate(text, voice)
+    await communicate.save(filename)
 
 def text_to_speech(text, language='english'):
-    ensure_audio_dir()
-    filename = f"{uuid.uuid4()}.mp3"
-    filepath = os.path.join(AUDIO_DIR, filename)
-    voice = get_voice(language)
+    try:
+        voice = VOICE_MAP.get(language.lower(), VOICE_MAP['english'])
 
-    async def generate():
-        communicate = Communicate(text=text, voice=voice)
-        await communicate.save(filepath)
+        # Generate unique filename
+        filename = f"{uuid.uuid4().hex}.mp3"
+        filepath = os.path.join(AUDIO_DIR, filename)
 
-    asyncio.run(generate())
-    return f"/static/audio/{filename}"
+        # Run the async function
+        asyncio.run(generate_audio(text, voice, filepath))
+
+        # Return accessible URL path
+        return f"/static/audio/{filename}"
+    except Exception as e:
+        print(f"[TTS Error] {str(e)}")
+        raise e
