@@ -1,5 +1,4 @@
-// ✅ UPDATED JavaScript: Read Aloud will now work in Android WebView and APK
-
+// ✅ FINAL Image to Braille JS (Read Aloud fully working)
 
 document.addEventListener('DOMContentLoaded', function () {
     const imageInput = document.getElementById('image-input');
@@ -13,7 +12,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadingSpinner = document.getElementById('loading-spinner');
     const readAloudButton = document.getElementById('read-aloud-button');
 
-    // Show image preview
     imageInput.addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (file) {
@@ -28,7 +26,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Handle form submission for OCR and Braille conversion
     uploadForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -65,8 +62,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 displayDetailedMapping(data.detailed_mapping);
 
                 readAloudButton.classList.remove('d-none');
-                readAloudButton.setAttribute('data-lang', language);
-
                 showNotification('Success', 'Text extracted and converted to Braille.');
             })
             .catch(err => {
@@ -76,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
-    // ✅ Handle Read Aloud with audio URL (for Android compatibility)
+    // ✅ Android WebView-Compatible Read Aloud
     if (readAloudButton) {
         readAloudButton.addEventListener('click', function () {
             const text = extractedTextElement.textContent.trim();
@@ -98,9 +93,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         showNotification('Error', data.error);
                         return;
                     }
+
                     const audio = new Audio(data.audio_url);
-                    audio.play();
-                    showNotification('Success', 'Reading aloud...');
+                    audio.play().then(() => {
+                        showNotification('Success', 'Reading aloud...');
+                    }).catch(err => {
+                        console.error('Audio play error:', err);
+                        showNotification('Error', 'Unable to play audio.');
+                    });
                 })
                 .catch(err => {
                     console.error('TTS Error:', err);
