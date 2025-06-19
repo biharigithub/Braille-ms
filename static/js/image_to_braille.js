@@ -1,3 +1,6 @@
+// ✅ UPDATED JavaScript: Read Aloud will now work in Android WebView and APK
+
+
 document.addEventListener('DOMContentLoaded', function () {
     const imageInput = document.getElementById('image-input');
     const imagePreview = document.getElementById('image-preview');
@@ -73,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     });
 
-    // Handle Read Aloud
+    // ✅ Handle Read Aloud with audio URL (for Android compatibility)
     if (readAloudButton) {
         readAloudButton.addEventListener('click', function () {
             const text = extractedTextElement.textContent.trim();
@@ -95,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         showNotification('Error', data.error);
                         return;
                     }
-                    const audio = new Audio('data:audio/mp3;base64,' + data.audio_data);
+                    const audio = new Audio(data.audio_url);
                     audio.play();
                     showNotification('Success', 'Reading aloud...');
                 })
