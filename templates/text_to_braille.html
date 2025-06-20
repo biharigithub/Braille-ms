@@ -52,9 +52,6 @@
                             <button id="record-button" class="btn btn-danger record-btn" title="Record Speech">
                                 <i class="fas fa-microphone"></i>
                             </button>
-                            <button id="stop-record-button" class="btn btn-danger record-btn d-none" title="Stop Recording">
-                                <i class="fas fa-stop"></i>
-                            </button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -133,69 +130,17 @@
         document.addEventListener('DOMContentLoaded', function () {
             const textInput = document.getElementById('text-input');
             const recordButton = document.getElementById('record-button');
-            const stopRecordButton = document.getElementById('stop-record-button');
             const brailleOutput = document.getElementById('braille-output');
             const detailedMapping = document.getElementById('detailed-mapping');
 
-            let recognition;
-            let isRecording = false;
-
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = 'en-US';
-                recognition.continuous = true;
-                recognition.interimResults = false;
-
-                recognition.onstart = () => {
-                    isRecording = true;
-                    recordButton.classList.add('d-none');
-                    stopRecordButton.classList.remove('d-none');
-                    showNotification('Recording Started', 'Speak now...');
-                };
-
-                recognition.onresult = (event) => {
-                    let finalTranscript = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            finalTranscript += event.results[i][0].transcript;
-                        }
-                    }
-                    textInput.value = finalTranscript.trim();
-                    convertTextToBraille(finalTranscript.trim());
-                };
-
-                recognition.onerror = (event) => {
-                    showNotification('Error', 'Speech recognition error: ' + event.error);
-                    stopRecording();
-                };
-
-                recognition.onend = () => {
-                    isRecording = false;
-                    recordButton.classList.remove('d-none');
-                    stopRecordButton.classList.add('d-none');
-                };
-            } else {
-                recordButton.style.display = 'none';
-                stopRecordButton.style.display = 'none';
-                showNotification('Unsupported', 'Speech Recognition not supported');
-            }
-
+            // ✅ Use AndroidInterface for mic
             recordButton?.addEventListener('click', () => {
-                if (recognition && !isRecording) {
-                    textInput.value = '';
-                    recognition.start();
+                if (window.AndroidInterface && typeof window.AndroidInterface.startSpeech === 'function') {
+                    window.AndroidInterface.startSpeech();
+                } else {
+                    showNotification('Unsupported', 'Speech Recognition not supported on this device.');
                 }
             });
-
-            stopRecordButton?.addEventListener('click', () => {
-                stopRecording();
-            });
-
-            function stopRecording() {
-                if (recognition && isRecording) {
-                    recognition.stop();
-                }
-            }
 
             function convertTextToBraille(text) {
                 fetch('/api/text-to-braille', {
@@ -244,6 +189,9 @@
                 notification.classList.add('show');
                 setTimeout(() => notification.classList.remove('show'), 3000);
             }
+
+            // ✅ Call this function externally from Android after mic input
+            window.convertTextToBraille = convertTextToBraille;
         });
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
